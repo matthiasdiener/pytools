@@ -348,6 +348,37 @@ def test_validate_graph():
     validate_graph({})
 
 
+
+def test_is_connected():
+    from pytools.graph import is_connected
+    graph1 = {
+            "d": set("c"),
+            "b": set("a"),
+            "a": set(),
+            "c": set("a"),
+            }
+
+    assert not is_connected(graph1)
+
+    graph2 = {
+            "d": set("d"), # d is not connected
+            "b": set("c"),
+            "a": set("b"),
+            "c": set("a"),
+            }
+
+    assert not is_connected(graph2)
+
+    graph3 = {
+        "a": frozenset(("b", "c")),
+        "b": frozenset(),
+        "c": frozenset(),
+        }
+
+    assert is_connected(graph3)
+
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

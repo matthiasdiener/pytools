@@ -420,4 +420,50 @@ def validate_graph(graph: Mapping[T, Collection[T]]) -> None:
 
 # }}}
 
+
+# {{{ is_connected
+
+def is_connected(graph: Mapping[T, Collection[T]]) -> bool:
+    """
+    Returns whether a graph *graph* is connected.
+
+    :arg graph: A :class:`collections.abc.Mapping` representing a directed
+        graph. The dictionary contains one key representing each node in the
+        graph, and this key maps to a :class:`collections.abc.Collection` of nodes
+        that are connected to the node by outgoing edges.
+    """
+
+    validate_graph(graph)
+
+    nnodes = len(graph.keys())
+    init_node = next(iter(graph))
+    visited1: Set[T] = set()
+
+    def dfs(graph: Mapping[T, Collection[T]], node: T, visited: Set[T]) -> None:
+        visited.add(node)
+
+        for child in graph[node]:
+            if child not in visited:
+                dfs(graph, child, visited)
+
+    dfs(graph, init_node, visited1)
+
+    rev_graph = reverse_graph(graph)
+
+    rev_visited: Set[T] = set()
+
+    dfs(rev_graph, init_node, rev_visited)
+
+    print(visited1)
+    print(rev_visited)
+
+    for node in graph.keys():
+        if node not in visited1 and node not in rev_visited:
+            return False
+
+    return True
+
+
+# }}}
+
 # vim: foldmethod=marker
