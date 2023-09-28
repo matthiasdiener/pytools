@@ -570,6 +570,24 @@ class _PersistentDictBase:
         from os.path import join
         return join(self._item_dir(hexdigest_key), "key")
 
+    def keys(self):
+        import pickle
+        for root, _, files in os.walk(self.container_dir):
+            for filename in files:
+                if filename == "key":
+
+                    file_path = os.path.join(root, filename)
+
+                    hexdigest_key = os.path.normpath(
+                        os.path.join(root[len(self.container_dir):], filename))
+
+                    lock_file = self._lock_file(hexdigest_key)
+                    self._spin_until_removed(lock_file, 1)
+
+                    with open(file_path, 'rb') as file:
+                        data = pickle.load(file)
+                        yield data
+
     def _contents_file(self, hexdigest_key):
         from os.path import join
         return join(self._item_dir(hexdigest_key), "contents")

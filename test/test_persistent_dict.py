@@ -363,8 +363,15 @@ def test_write_once_persistent_dict_clear():
         pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         pdict[0] = 1
+
+        assert 0 in pdict.keys()
+        assert len(list(pdict.keys())) == 1
+
         pdict.fetch(0)
         pdict.clear()
+
+        assert 0 not in pdict.keys()
+        assert len(list(pdict.keys())) == 0
 
         with pytest.raises(NoSuchEntryError):
             pdict.fetch(0)
