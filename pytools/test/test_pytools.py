@@ -784,6 +784,42 @@ def test_unique():
     assert next(unique([]), None) is None
 
 
+def test_run_once():
+    from pytools import run_once
+
+    nruns = 0
+
+    @run_once
+    def my_fn():
+        nonlocal nruns
+        nruns += 1
+
+    my_fn()
+    my_fn()
+
+    assert nruns == 1
+
+    nruns = 0
+
+    class C:
+        @run_once
+        def my_method(self):
+            print("ran")
+            nonlocal nruns
+            nruns += 1
+
+    c1 = C()
+    c2 = C()
+
+    c1.my_method()
+    c1.my_method()
+    assert nruns == 1
+
+    c2.my_method()
+    c2.my_method()
+    assert nruns == 1
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

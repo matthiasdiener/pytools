@@ -195,6 +195,11 @@ Sequence utilities
 
 .. autofunction:: unique
 
+Misc utilities
+--------------
+
+.. autofunction:: run_once
+
 Type Variables Used
 -------------------
 
@@ -982,6 +987,34 @@ class keyed_memoize_in(Generic[P, R]):  # noqa
                 return result
 
         return new_inner
+
+# }}}
+
+
+# {{{ run_once
+
+def run_once(func, ntimes: int = 1):
+    """Run a function or method *func* once (or *ntimes*)."""
+
+    import functools
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        nonlocal ntimes
+        if len(args) > 0 and hasattr(args[0], '__dict__'):
+            instance = args[0]
+            attr_name = f"_{func.__name__}_called"
+            ntimes = getattr(instance, attr_name, ntimes)
+            if ntimes > 0:
+                setattr(instance, attr_name, ntimes-1)
+                return func(*args, **kwargs)
+        else:
+            ntimes = getattr(wrapper, "_ntimes", ntimes)
+            if ntimes > 0:
+                setattr(wrapper, "_ntimes", ntimes-1)
+                return func(*args, **kwargs)
+
+    return wrapper
 
 # }}}
 
