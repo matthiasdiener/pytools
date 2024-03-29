@@ -404,6 +404,14 @@ class _PersistentDictBase:
         # https://www.sqlite.org/pragma.html#pragma_cache_size
         self.conn.execute("PRAGMA cache_size = -64000;")
 
+    def _store_value(self, value: Any) -> bytes:
+        import zlib, blosc, zstd, gzip
+        return sqlite3.Binary(gzip.compress(pickle.dumps(value, pickle.HIGHEST_PROTOCOL)))
+
+    def _load_value(self, obj: bytes) -> Any:
+        import zlib, blosc, zstd, gzip
+        return pickle.loads(gzip.decompress(bytes(obj)))
+
     def __del__(self) -> None:
         if self.conn:
             self.conn.close()
@@ -448,12 +456,12 @@ class _PersistentDictBase:
     def values(self) -> Generator[Any, None, None]:
         """Return an iterator over the values in the dictionary."""
         for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
-            yield pickle.loads(row[0])
+            yield self._load_value(row[0])
 
     def items(self) -> Generator[tuple[str, Any], None, None]:
         """Return an iterator over the items in the dictionary."""
         for row in self.conn.execute("SELECT key, value FROM dict ORDER BY rowid"):
-            yield (row[0], pickle.loads(row[1]))
+            yield (row[0], self._load_value(row[1]))
 
     def size(self) -> int:
         """Return the size of the dictionary in bytes."""
@@ -512,7 +520,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
     def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
         k = self.key_builder(key)
-        v = pickle.dumps(value)
+        v = self._store_value(value)
 
         try:
             self.conn.execute("INSERT INTO dict VALUES (?, ?)", (k, v))
@@ -527,7 +535,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         row = c.fetchone()
         if row is None:
             raise KeyError
-        return pickle.loads(row[0])
+        return self._load_value(row[0])
 
     def fetch(self, key: Any) -> Any:
         k = self.key_builder(key)
@@ -571,7 +579,7 @@ class PersistentDict(_PersistentDictBase):
 
     def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
         k = self.key_builder(key)
-        v = pickle.dumps(value)
+        v = self._store_value(value)
 
         if _skip_if_present:
             try:
@@ -589,7 +597,7 @@ class PersistentDict(_PersistentDictBase):
         row = c.fetchone()
         if row is None:
             raise NoSuchEntryError(key)
-        return pickle.loads(row[0])
+        return self._load_value(row[0])
 
     def remove(self, key: Any) -> None:
         """Remove the entry associated with *key* from the dictionary."""
