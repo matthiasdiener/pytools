@@ -56,7 +56,7 @@ def test_opt_frozen_dataclass() -> None:
 
     with pytest.raises(TypeError):
         # Can't specify frozen parameter
-        @opt_frozen_dataclass(frozen=False)  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg
+        @opt_frozen_dataclass(frozen=False)
         class B:
             x: int
 
@@ -73,6 +73,25 @@ def test_opt_frozen_dataclass() -> None:
 
     # Equality is not defined and uses id()
     assert c != C(1)
+
+    # }}}
+
+    # {{{ Test with __debug__ "disabled"
+
+    @opt_frozen_dataclass(frozen_override=False)
+    class D:
+        x: int
+
+    d = D(1)
+    assert d.x == 1
+
+    # Actually mutable
+    d.x = 2  # type: ignore[misc]
+
+    # Must be hashable, despite not frozen (via unsafe_hash)
+    assert hash(d) == hash(D(2))
+    assert d.__dataclass_params__.frozen is False  # type: ignore[attr-defined]  # pylint: disable=no-member
+    assert d.__dataclass_params__.unsafe_hash is True  # type: ignore[attr-defined]  # pylint: disable=no-member
 
     # }}}
 
